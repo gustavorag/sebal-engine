@@ -43,10 +43,7 @@ public class SebalTasks {
 	public static final String METADATA_RIGHT_X = "right_x";
 	public static final String METADATA_LOWER_Y = "lower_y";
 	private static final String METADATA_REMOTE_BOUNDINGBOX_PATH = "remote_boundingbox_path";
-	private static final String METADATA_IMAGES_LOCAL_PATH = "images_local_path";
-	public static final String METADATA_RESULTS_LOCAL_PATH = "results_local_path";
 	private static final String METADATA_SEBAL_VERSION = "sebal_url";
-	private static final String METADATA_REPOS_USER = "repository_user";
 	private static final String METADATA_MOUNT_POINT = "mount_point";
 	private static final String METADATA_REMOTE_REPOS_PRIVATE_KEY_PATH = "remote_repos_private_key_path";
 	
@@ -170,13 +167,8 @@ public class SebalTasks {
 		task.putMetadata(TaskImpl.METADATA_TASK_TIMEOUT, properties.getProperty("sebal_task_timeout"));
 		
 		// repository properties
-		task.putMetadata(METADATA_REPOS_USER, properties.getProperty("sebal_remote_user"));
 		task.putMetadata(METADATA_MOUNT_POINT,
 				properties.getProperty("sebal_mount_point"));
-		task.putMetadata(METADATA_IMAGES_LOCAL_PATH,
-				properties.getProperty("sebal_images_local_path"));
-		task.putMetadata(METADATA_RESULTS_LOCAL_PATH,
-				properties.getProperty("sebal_results_local_path"));
 	}
 
 	private static String createRemoteScriptExecCommand(String remoteScript) {
@@ -235,14 +227,8 @@ public class SebalTasks {
 				task.getMetadata(METADATA_NFS_SERVER_PORT));
 		command = command.replaceAll(Pattern.quote("${VOLUME_EXPORT_PATH}"),
 				task.getMetadata(METADATA_VOLUME_EXPORT_PATH));
-		command = command.replaceAll(Pattern.quote("${REMOTE_USER}"),
-				task.getMetadata(METADATA_REPOS_USER));
 		command = command.replaceAll(Pattern.quote("${USER_PRIVATE_KEY}"),
 				task.getMetadata(METADATA_REMOTE_REPOS_PRIVATE_KEY_PATH));
-		command = command.replaceAll(Pattern.quote("${IMAGES_LOCAL_PATH}"),
-				task.getMetadata(METADATA_IMAGES_LOCAL_PATH));
-		command = command.replaceAll(Pattern.quote("${RESULTS_LOCAL_PATH}"),
-				task.getMetadata(METADATA_RESULTS_LOCAL_PATH));
 		command = command.replaceAll(Pattern.quote("${SEBAL_MOUNT_POINT}"),
 				task.getMetadata(METADATA_MOUNT_POINT));
 
@@ -254,18 +240,6 @@ public class SebalTasks {
 			command = command.replaceAll(Pattern.quote("${ADDITIONAL_LIBRARY_PATH}"),
 					"");
 		}
-
-		command = command.replaceAll(Pattern.quote("${NUMBER_OF_PARTITIONS}"),
-				task.getMetadata(METADATA_NUMBER_OF_PARTITIONS));
-		command = command.replaceAll(Pattern.quote("${PARTITION_INDEX}"),
-				task.getMetadata(METADATA_PARTITION_INDEX));
-		command = command.replaceAll(Pattern.quote("${LEFT_X}"), task.getMetadata(METADATA_LEFT_X));
-		command = command.replaceAll(Pattern.quote("${UPPER_Y}"),
-				task.getMetadata(METADATA_UPPER_Y));
-		command = command.replaceAll(Pattern.quote("${RIGHT_X}"),
-				task.getMetadata(METADATA_RIGHT_X));
-		command = command.replaceAll(Pattern.quote("${LOWER_Y}"),
-				task.getMetadata(METADATA_LOWER_Y));
 
 		command = command.replaceAll(Pattern.quote("${REMOTE_COMMAND_EXIT_PATH}"),
 				task.getMetadata(TaskImpl.METADATA_REMOTE_COMMAND_EXIT_PATH));
