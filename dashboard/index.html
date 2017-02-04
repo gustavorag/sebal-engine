@@ -42,28 +42,29 @@
 
 </head>
 
-<body class="messages-page ng-clock" ng-controller="MonitorController" style="overflow: hidden;">
+<body class="ng-clock" ng-controller="loginController" style="background-color:rgb(91, 91, 95); overflow: hidden;">
   <!-- Start: Main -->
-  <div id="main" >
-    <span class='nprogress-logo fade out ng-clock'></span>
+  <div >
+    <span class='ng-clock'></span>
 
-
-    <!-- Start: Content-Wrapper -->
-    <section id="content_wrapper">
-
-      
       <!-- Begin: Content -->
-      <section id="content" class="animated fadeIn">
-
-          <div align="center" style="font-size:250%; padding-top:15%"> Welcome to Sebal Scheduler Monitor </div>
-          <div align="center" style="font-size:400%;">
-              <a href="tasksPage.html"><span class="label label-default">&lt; #START TASK MONITOR&gt;</span></a>
-              <a href="imagesPage.html"><span class="label label-default">&lt; #START SHOW IMAGES&gt;</span></a>
+        <div class="row" style="width: 60%; height: 60%; margin-left: 20%; padding-top: 15%;">
+          <div align="center" class="col-md-6"><img src="/images/sebal-logo.png" style="max-width:60%; height: auto; display: block;"/></div>
+          <div align="center" class="col-md-6">
+            <form>
+              <div style="margin-left: 10%; margin-right: 20%; margin-bottom: 20px;">
+                  <input align="center" type="text" class="form-control" id="nameInput" placeholder="NAME">
+              </div>
+              <div style="margin-left: 10%; margin-right: 20%; margin-bottom: 50px;">
+                  <input align="center" type="password" class="form-control" id="passwordInput" placeholder="PASSWORD">
+              </div>
+              <div style="margin-left: 10%; margin-right: 20%;">
+                <a href="/pages/main.html#/monitor" class="btn btn-default btn-lg">SING IN</a>
+              </div>
+            </form>
           </div>
-      </section>
-      <!-- End: Content -->
+        </div>
 
-    </section>
   </div>
   <!-- End: Main -->
  
@@ -88,7 +89,6 @@
   <script src="vendor/angular/angular-resource.min.js"></script>
   <script src="dashboardApp.js"></script>
   <script src="controllers/dashboardControllers.js"></script>
-  <script src="services/dashboardServices.js"></script>
   <!-- modal images -->
   <script src="vendor/plugins/magnific/jquery.magnific-popup.js"></script>
   <script src="vendor/plugins/highlight/highlight.pack.js"></script>
