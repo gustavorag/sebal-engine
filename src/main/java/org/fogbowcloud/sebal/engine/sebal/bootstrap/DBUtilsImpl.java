@@ -23,6 +23,8 @@ import org.fogbowcloud.sebal.engine.sebal.ImageData;
 import org.fogbowcloud.sebal.engine.sebal.ImageState;
 import org.fogbowcloud.sebal.engine.sebal.JDBCImageDataStore;
 import org.fogbowcloud.sebal.engine.sebal.USGSNasaRepository;
+import org.fogbowcloud.sebal.engine.sebal.model.SebalUser;
+import org.fogbowcloud.sebal.notifier.Ward;
 
 public class DBUtilsImpl implements DBUtils {
 
@@ -39,6 +41,75 @@ public class DBUtilsImpl implements DBUtils {
         this.nasaRepository = new DefaultNASARepository(properties);
 		this.usgsRepository = new USGSNasaRepository(properties);
     }
+    
+	@Override
+	public void addUserInDB(String userEmail, String userName, String userPass,
+			boolean userState, boolean userNotify, boolean adminRole)
+			throws SQLException {
+
+		try {
+			imageStore.addUser(userEmail, userName, userPass, userState,
+					userNotify, adminRole);
+		} catch (SQLException e) {
+			LOGGER.error("Error while adding user " + userEmail + " in DB", e);
+			throw new SQLException(e);
+		}
+	}
+	
+	@Override
+	public void updateUserState(String userEmail, boolean userState) throws SQLException {
+		
+		try {
+			imageStore.updateUserState(userEmail, userState);
+		} catch (SQLException e) {
+			LOGGER.error("Error while adding user " + userEmail + " in DB", e);
+			throw new SQLException(e);
+		}
+	}
+	
+	@Override
+	public SebalUser getUser(String userEmail) {
+		try {
+			return imageStore.getUser(userEmail);
+		} catch (SQLException e) {
+			LOGGER.error("Error while trying to get Sebal User with email: " + userEmail + ".", e);
+		}
+		return null;
+	}
+	
+	@Override
+	public void addUserInNotifyDB(String jobId, String imageName, String userEmail) throws SQLException {
+		
+		try {
+			imageStore.addUserNotify(jobId, imageName, userEmail);
+		} catch (SQLException e) {
+			LOGGER.error("Error while adding image " + imageName + " user " + userEmail + " in notify DB", e);
+		}
+	}
+	
+	@Override
+	public void removeUserNotify(String jobId, String imageName, String userEmail)
+			throws SQLException {
+
+		try {
+			imageStore.removeUserNotify(jobId, imageName, userEmail);
+		} catch (SQLException e) {
+			LOGGER.error("Error while removing image " + imageName + " user "
+					+ userEmail + " from notify DB", e);
+		}
+	}
+	
+	@Override
+	public boolean isUserNotifiable(String userEmail) throws SQLException {
+		
+		try {
+			return imageStore.isUserNotifiable(userEmail);
+		} catch(SQLException e) {
+			LOGGER.error("Error while verifying user notify", e);
+		}
+		
+		return false;
+	}
 
     @Override
     public void setImagesToPurge(String day, boolean force) throws SQLException, ParseException {
@@ -64,7 +135,7 @@ public class DBUtilsImpl implements DBUtils {
     }
 
     protected Date parseStringToDate(String day) throws ParseException {
-        DateFormat format = new SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH);
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
         java.util.Date date = format.parse(day);
         java.sql.Date sqlDate = new java.sql.Date(date.getTime());
         return sqlDate;
@@ -81,7 +152,7 @@ public class DBUtilsImpl implements DBUtils {
         for (int i = 0; i < allImageData.size(); i++) {
             System.out.println(allImageData.get(i).toString());
         }
-    }
+    }    
 
     @Override
     public void listCorruptedImages() throws ParseException {
@@ -116,18 +187,14 @@ public class DBUtilsImpl implements DBUtils {
     }
 
     @Override
-    public void fillDB(int firstYear, int lastYear, List<String> regions, String sebalVersion, String sebalTag) throws IOException {
+    public List<String> fillDB(int firstYear, int lastYear, List<String> regions, String sebalVersion, String sebalTag) throws IOException {
 
         LOGGER.debug("Regions: " + regions);
-        
-        if(sebalVersion == null || sebalVersion.isEmpty()) {
-        	sebalVersion = "NE";
-        }
-
+        List<String> imageNames = new ArrayList<String>();
         int priority = 0;
         for (String region : regions) {
             for (int year = firstYear; year <= lastYear; year++) {
-                String imageList = createImageList(region, year);
+            	String imageList = createImageList(region, year);
 
                 File imageListFile = new File("images-" + year + ".txt");
                 FileUtils.write(imageListFile, imageList);
@@ -141,6 +208,7 @@ public class DBUtilsImpl implements DBUtils {
                     try {
                         getImageStore().addImage(imageName,
                                 imageAndDownloadLink.get(imageName), priority, sebalVersion, sebalTag);
+                        imageNames.add(imageName);
                     } catch (SQLException e) {
                         // TODO do we need to do something?
                         LOGGER.error("Error while adding image at data base.", e);
@@ -149,6 +217,32 @@ public class DBUtilsImpl implements DBUtils {
             }
             priority++;
         }
+        return imageNames;
+    }
+
+    public List<ImageData> getImagesInDB() throws SQLException, ParseException {
+    	
+    	return imageStore.getAllImages();        
+    }
+    
+    @Override
+    public List<Ward> getUsersToNotify() throws SQLException {    	
+    	
+    	List<Ward> wards = imageStore.getUsersToNotify();    	
+    	return wards;    	
+    }
+    
+    public ImageData getImageInDB(String imageName) throws SQLException {
+    	List<ImageData> allImages = imageStore.getAllImages();
+    	
+    	for(ImageData imageData : allImages) {
+    		if(imageData.getName().equals(imageName)) {
+    			return imageData;
+    		}
+    	}
+    	
+    	// FIXME: deal with this better
+    	return null;
     }
 
     protected String createImageList(String region, int year) {
@@ -183,5 +277,9 @@ public class DBUtilsImpl implements DBUtils {
 
     public static String getImageRegionFromName(String imageName) {
         return imageName.substring(3, 9);
+    }
+    
+    public Properties getProperties() {
+    	return properties;
     }
 }

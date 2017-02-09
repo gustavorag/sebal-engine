@@ -1,19 +1,23 @@
 package org.fogbowcloud.sebal.engine.sebal.bootstrap;
 
-import org.apache.log4j.Logger;
-
-import java.io.*;
-import java.sql.SQLException;
-import java.text.ParseException;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import org.apache.log4j.Logger;
+
 public class DBMain {
 
+	private static final String DEFAULT_SEBAL_VERSION = "default_sebal_version";
+	
 	private static final Logger LOGGER = Logger.getLogger(DBMain.class);
 
-	public static void main(String[] args) throws SQLException, ParseException {
+	public static void main(String[] args) throws Exception {
 
 		if (args.length < 2) {
 			System.err.println("Usage: DBMain /path/to/sebal.conf [add,list,list-corrupted,get,purge] [options]");
@@ -51,29 +55,34 @@ public class DBMain {
 			// TODO: one more field corresponding to SEBAL software version
 			if (args.length < 5) {
 				System.err.println("Usage: DBMain /path/to/sebal.conf add firstYear lastYear /path/to/regions/file"
-						+ " [--sebal-repository] [--repository-tag]");
+						+ " [--sebal-repository] urlToRepository tagFromRepository");
 				System.exit(1);
 			}
 
 			int firstYear;
-			int lastYear;		
+			int lastYear;
 			String sebalVersion = null;
 			String sebalTag = null;
-			
-			if(args.length > 5) {
+
+			if (args.length > 5) {
 				String opt = args[6];
-				if(opt.equals("--sebal-repository")) {
-					// pinpoint specific SEBAL software version to be used in Worker
+				if (opt.equals("--sebal-repository")) {
+					// pinpoint specific SEBAL software version to be used in
+					// Worker
 					sebalVersion = args[7];
-					opt = args[7];
-					if(opt.equals("--repository-tag")) {
-						sebalTag = args[8];
-					} else {
-						sebalTag = "NE";
+					sebalTag = args[8];
+					
+					if(sebalTag == null || sebalTag.isEmpty()) {
+						LOGGER.error("Invalid tag. Insert a valid one");
+						System.exit(1);
 					}
 				} else {
-					sebalVersion = "NE";
+					sebalVersion = properties.getProperty(DEFAULT_SEBAL_VERSION);
+					sebalTag = "NE";
 				}
+			} else {
+				sebalVersion = properties.getProperty(DEFAULT_SEBAL_VERSION);
+				sebalTag = "NE";
 			}
 
 			try {
@@ -113,6 +122,7 @@ public class DBMain {
 				firstYear = new Integer(args[2]);
 				lastYear = new Integer(args[3]);
 				String region = args[4];
+
 				dbUtilsImpl.getRegionImages(firstYear, lastYear, region);
 			} catch (NumberFormatException e) {
 				String errorMsg = "Wrong format firstYear: " + args[2] + " lastYear: " + args[3];
