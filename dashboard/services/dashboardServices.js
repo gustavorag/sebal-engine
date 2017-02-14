@@ -1,87 +1,78 @@
 var dashboardServices = angular.module('dashboardServices', ['ngResource']);
 
-dashboardServices.factory('SebalImagesResource', function($log, $resource, appConfig) {
-	var resourceUrl = appConfig.urlSebalSchedulerService+appConfig.imageResourcePath;
-	$log.debug("Creating resource to Sebal Image : "+resourceUrl);
-  	return $resource(resourceUrl, {}, {
-		get: { method: "GET", isArray: true }
-	});
-  	// return $resource('http://localhost:9192/images');
+dashboardServices.service('AuthenticationService', function($log, $resource, Session, appConfig) {
+	var resourceUrl = appConfig.urlSebalSchedulerService+appConfig.authenticationPath;
+	$log.debug("Creating resource to Sebal Authentication : "+resourceUrl+" --- Sessao: "+JSON.stringify(Session));
+  	
+  	var authService = {};
+
+  	authService.auth = function (username, password, callbackSuccess, callbackError) {
+
+  			//Implement clientside encriptography ??
+
+  			user = {name: username, pass: password};
+
+    		$http.post(resourceUrl, { username: username, password: password })
+               .success(function (response) {
+                   callbackSuccess(response)
+                })
+               .error(function (response) {
+                   callbackError(response);
+            	});
+
+    };
+
+  	authService.mockLogin = function (username, password, callbackSuccess, callbackError) {
+
+		if(!username || !password){
+			Session.destroy();
+			callbackError("Username and Password are required");
+		}else{
+			Session.create(username, password);
+			callbackSuccess("success");
+		}
+
+    };
+
+    authService.doLogout = function(){
+    	 Session.destroy();
+    };
+
+    authService.getUser = function(){
+   		return Session.getUser();
+    };
+
+    return authService;
+	
 });
 
-dashboardServices.service('TaskResource', function($log, $resource, appConfig) {
-	// return $resource("http://localhost:9192/tasks/:image", {}, {
-	// get: { method: "GET", isArray: true }
-	// });
-	var resourceUrl = appConfig.urlSebalSchedulerService+appConfig.taskResourcePath;
-	$log.debug("Creating resource to Sebal Tasks : "+resourceUrl);
-	return $resource(resourceUrl, {}, {
-		get: { method: "GET" },
-		getImage: { method: "GET", responseType: "arraybuffer" }
-	});
+dashboardServices.service('Session', function () {
+  this.create = function (userName, userPass) {
+  	console.log('Creating user ')
+  	this.user = {
+    	name: userName,
+    	pass: userPass
+    };
+  };
+  this.destroy = function () {
+    this.user = null;
+  };
+  this.getUser = function(){
+  	return this.user;
+  };
+})
+
+
+dashboardServices.service('RegionService', function($log, $resource, appConfig) {
+
+	var resourceUrl = appConfig.urlSebalSchedulerService+appConfig.regionPath;
+
+	return $resource(resourceUrl, null,
+           {
+	       		postRegion:{
+	       			method: 'POST',
+	               	headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+	       		}
+           	}
+	);
 });
-
-
-dashboardServices.factory('DbImagesResource', function($log, $resource, appConfig) {
-	var resourceUrl = appConfig.urlSebalSchedulerService+appConfig.dbImageResourcePath;
-	$log.debug("Creating resource to Db Image : "+resourceUrl);
-  	return $resource(resourceUrl, {}, {
-		get: { method: "GET", isArray: true },
-		getImage: { method: "GET", responseType: "arraybuffer" }
-	});
-  	// return $resource('http://localhost:9192/images');
-});
-
-
-dashboardServices.factory('FilterResource', function($log, $resource, appConfig) {
-	var resourceUrl = appConfig.urlSebalSchedulerService+appConfig.filterResourcePath;
-	$log.debug("Creating resource to State filter values : "+resourceUrl);
-  	return $resource(resourceUrl, {}, {
-		get: { method: "GET", isArray: true }
-	});
-  	// return $resource('http://localhost:9192/images');
-});
-
-
-
-
-//Using HTTP.get
-//dashboardServices.service('SebalImagesService', function($http, $filter, $log) {
-//
-//	this.getImages = function() {
-//
-//	    $log.debug('Getting images from http://localhost:9192/images');
-//	    $http.get('http://localhost:9192/images').success(function(data) {
-//	    	var images = data;
-//	    	$log.debug('Returning images: '+JSON.stringify(images));
-//	      	return images;
-//	    });
-//          
-//  };
-//
-//});
-
-//dashboardServices.service('TaskResource', function($http, $filter, $log) {
-//
-//	this.getTaskForImage = function(imgName) {
-//
-//    	console.log("Getting tasks for :"+imgName);
-//    	$http.get('http://localhost:9192/tasks/'+imgName).success(function(data) {
-//    		return data;
-//		});          
-//  };
-//
-//});
-
-
-
-/* Services */
-//Template for Services
-//var phonecatServices = angular.module('phonecatServices', ['ngResource']);
-//
-//phonecatServices.factory('Phone', ['$resource',
-//  function($resource){
-//    return $resource('phones/:phoneId.json', {}, {
-//      query: {method:'GET', params:{phoneId:'phones'}, isArray:true}
-//    });
-//  }]);

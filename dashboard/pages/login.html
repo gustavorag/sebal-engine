@@ -1,0 +1,22 @@
+<!-- Begin: Content -->
+<div class="row" ng-controller="loginController"
+  style="width: 60%; height: 60%; margin-left: 20%; padding-top: 15%;">
+  <div align="center" class="col-md-6"><img src="/images/sebal-logo.png" style="max-width:60%; height: auto; display: block;"/></div>
+  <div align="center" class="col-md-6" style="margin-top: 5%;">
+    <form action="/" id="loginFormId">
+      <div style="margin-left: 10%; margin-right: 20%; margin-bottom: 20px;">
+          <input align="center" type="text" class="form-control" id="nameInput" 
+           ng-model="username" required placeholder="NAME/EMAIL">
+      </div>
+      <div style="margin-left: 10%; margin-right: 20%; ">
+          <input align="center" type="password" class="form-control" id="passwordInput" 
+           ng-model="password" required placeholder="PASSWORD">
+      </div>
+      <div style="margin-left: 10%; margin-right: 20%; color: red; font-size: 1.5em">{{errorMsg}}</div>
+      
+      <div style="margin-left: 10%; margin-right: 20%; margin-top: 50px;">
+        <a ng-click="doLogin()" class="btn btn-default btn-lg">SING IN</a>
+      </div>
+    </form>
+  </div>
+</div>

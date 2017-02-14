@@ -163,19 +163,28 @@ function initiateMap(elementId, callbackFuncForSelection){
     })
   });
 
-  var extent = mapView.calculateExtent(map.getSize());
-
-  var mapSelection = SquareSelection(extent);
-
-  var longIncreaseFactor = (mapSelection.getXDimension() / columnsNumber);
-  var latIncreaseFactor = (mapSelection.getYDimension() / rowsNumber);
+  
 
   var gridArray = [];
 
-  var generateGrid = function(xFactor, yFactor){
-      console.log("Generating grid...")
+  var generateGrid = function(){
+
+      var extent = mapView.calculateExtent(map.getSize());
+
+      var mapSelection = SquareSelection(extent);
+
+      var xFactor = (mapSelection.getXDimension() / columnsNumber);
+      var yFactor = (mapSelection.getYDimension() / rowsNumber);
+
+      map.getLayers().forEach(function(layer, i) {
+        if (layer instanceof ol.layer.Group) {
+          console.log('Removing Group Layer');
+          map.removeLayer(layer);
+        }
+      });
 
       var actualLX, actualLY, actualHX, actualHY;
+      var gridLayers = [];
 
       for(var latCount = 1; latCount <= rowsNumber; latCount++){
         for(var longCount = 1; longCount <= columnsNumber; longCount++){
@@ -202,20 +211,28 @@ function initiateMap(elementId, callbackFuncForSelection){
                 // })
               })
             })
-            map.addLayer(newLayerVector);
-
+            
+            gridLayers.push(newLayerVector);
             var newSquare = SquareSelection(polygonCoords);
             gridArray.push(newSquare)
 
         }
       }
+      var gridGroupLayers = new ol.layer.Group({
+            layers: gridLayers
+      });
 
+      map.addLayer(gridGroupLayers);
       
   };
 
-  generateGrid(longIncreaseFactor, latIncreaseFactor);
+  
+  //window.onresize = function(){console.log('Mudou')};
+  
+  //generateGrid(longIncreaseFactor, latIncreaseFactor);
+  map.on('moveend', generateGrid);
+  
 
-  console.log('There are '+gridArray.length+' squares')
   /// ********* INTERACTIONS **********************
 
   // a normal select interaction to handle click

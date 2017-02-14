@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" ng-app="schedulerDashboard">
+<html lang="en">
 
 <head>
   <!-- Meta, title, CSS, favicons, etc. -->
@@ -9,30 +9,33 @@
   <meta name="description" content="Sebal Scheduler Monitor">
   <meta name="author" content="LSD - Laboratório de Sistemas Distribuidos">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <style>
+      .ol-dragbox {
+        background-color: rgba(255,255,255,0.5);
+        border-color: rgba(100,150,0,1);
+      }
+  </style>
   <!-- Font CSS (Via CDN) -->
   <link rel='stylesheet' type='text/css' href='http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700'>
 
   <!-- Summernote CSS  -->
   <link rel="stylesheet" type="text/css" href="vendor/plugins/summernote/summernote.css">
-
   <!-- Iconsweets CSS(font) -->
   <link rel="stylesheet" type="text/css" href="assets/fonts/iconsweets/iconsweets.css">
-
   <!-- magnific modal -->
   <link href="vendor/plugins/magnific/magnific-popup.css" rel="stylesheet" type="text/css" >
-
   <!-- Theme CSS -->
   <link rel="stylesheet" type="text/css" href="assets/skin/default_skin/css/theme.css">
-
   <!-- Admin Forms CSS -->
   <link rel="stylesheet" type="text/css" href="assets/admin-tools/admin-forms/css/admin-forms.css">
-
   <!-- Favicon -->
   <link rel="shortcut icon" href="assets/img/favicon.ico">
-  
+  <!-- Openlayers CSS -->
+  <link rel="stylesheet" href="https://openlayers.org/en/v3.20.1/css/ol.css" type="text/css">
+
   <!-- Angular -->
-  <script src="vendor/angular/angular.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular.min.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular-route.js"></script>
 
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!--[if lt IE 9]>
@@ -42,34 +45,19 @@
 
 </head>
 
-<body class="ng-clock" ng-controller="loginController" style="background-color:rgb(91, 91, 95); overflow: hidden;">
+<body class="ng-clock"  ng-app="schedulerDashboard" 
+  style="background-color:rgb(91, 91, 95); overflow: hidden;">
   <!-- Start: Main -->
-  <div >
+  <div style="height:100%">
     <span class='ng-clock'></span>
 
-      <!-- Begin: Content -->
-        <div class="row" style="width: 60%; height: 60%; margin-left: 20%; padding-top: 15%;">
-          <div align="center" class="col-md-6"><img src="/images/sebal-logo.png" style="max-width:60%; height: auto; display: block;"/></div>
-          <div align="center" class="col-md-6">
-            <form>
-              <div style="margin-left: 10%; margin-right: 20%; margin-bottom: 20px;">
-                  <input align="center" type="text" class="form-control" id="nameInput" placeholder="NAME">
-              </div>
-              <div style="margin-left: 10%; margin-right: 20%; margin-bottom: 50px;">
-                  <input align="center" type="password" class="form-control" id="passwordInput" placeholder="PASSWORD">
-              </div>
-              <div style="margin-left: 10%; margin-right: 20%;">
-                <a href="/pages/main.html#/monitor" class="btn btn-default btn-lg">SING IN</a>
-              </div>
-            </form>
-          </div>
-        </div>
+      <div ng-view style="height:100%"></div>
 
   </div>
   <!-- End: Main -->
  
 
-   <!-- BEGIN: PAGE SCRIPTS -->
+  <!-- BEGIN: PAGE SCRIPTS -->
 
   <!-- jQuery -->
   <script src="vendor/jquery/jquery-1.11.1.min.js"></script>
@@ -89,9 +77,12 @@
   <script src="vendor/angular/angular-resource.min.js"></script>
   <script src="dashboardApp.js"></script>
   <script src="controllers/dashboardControllers.js"></script>
+  <script src="services/dashboardServices.js"></script>
   <!-- modal images -->
   <script src="vendor/plugins/magnific/jquery.magnific-popup.js"></script>
   <script src="vendor/plugins/highlight/highlight.pack.js"></script>
+  <script src="https://openlayers.org/en/v3.20.1/build/ol.js"></script>
+  <script src="/openlayersmap.js"></script>
     
   <script type="text/javascript">
     jQuery(document).ready(function() {

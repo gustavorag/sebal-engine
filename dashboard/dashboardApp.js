@@ -1,12 +1,12 @@
 var app = angular.module('schedulerDashboard', [
 	'dashboardControllers',
-	//'dashboardServices',
+	'dashboardServices',
 	'ngRoute'
 	//'ui.bootstrap'
 ]);
 app.constant("appConfig", {
 	"urlSebalSchedulerService":"http://localhost:9192/sebal-scheduler/",
-	"imageResourcePath":"image/:imgName",
+	"authenticationPath":"auth/:authToken",
 	"taskResourcePath":"task/:taskId/:varType",
 	"dbImageResourcePath":"fetcher/image/",
 	"filterResourcePath":"fetcher/filter/:filter"
@@ -18,23 +18,16 @@ app.config(function($routeProvider){
 	$routeProvider
 	// route for the home page
 	.when('/', {
-	    templateUrl : '../index.html',
-	    controller  : 'loginController'
+	    templateUrl : '/pages/login.html',
 	})
-	.when('/main', {
-	    templateUrl : 'monitor.html',
-	    controller  : 'monitorController'
+	.when('/monitor', {
+	    templateUrl : '/pages/monitor.html',
 	})
-
-	// route for the about page
 	.when('/selectRegion', {
-	    templateUrl : 'select_region.html',
-	    controller  : 'regionController'
+	    templateUrl : '/pages/select_region.html',
 	})
-	// route for the contact page
-	.when('/submitRegion', {
-	    templateUrl : 'select_region.html',
-	    controller  : 'regionController'
-	});
+	.otherwise({
+        redirectTo: '/'
+     });
 });
 
