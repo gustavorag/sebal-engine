@@ -26,20 +26,26 @@ public class WardenImpl implements Warden {
 	private static final String CONF_PATH = "config/sebal.conf";
 	private static final String NOREPLY_EMAIL = "noreply_email";
 	private static final String NOREPLY_PASSWORD = "noreply_password";
-	private static final String DEFAULT_SLEEP_TIME = "default_sleep_time";
-
+	private static final String DEFAULT_SLEEP_TIME = "default_sleep_time";	
+	
 	public WardenImpl() {
-		try {
+		try {					
 			properties = new Properties();
 			FileInputStream input = new FileInputStream(CONF_PATH);
 			properties.load(input);
-
+						
 			dbUtilsImpl = new DBUtilsImpl(properties);
 		} catch (IOException e) {
 			LOGGER.error("Error while getting properties", e);
 		} catch (SQLException e) {
 			LOGGER.error("Error while initializing DBUtilsImpl", e);
 		}
+	}
+	
+	// For test only
+	protected WardenImpl(Properties properties, DBUtilsImpl dbUtilsImpl) {
+		this.properties = properties;
+		this.dbUtilsImpl = dbUtilsImpl;
 	}
 
 	// TODO: see if this will be runnable
@@ -49,16 +55,20 @@ public class WardenImpl implements Warden {
 			Collection<Ward> notified = new LinkedList<Ward>();
 			for (Ward ward : getPending()) {
 				ImageData imageData = getImageData(ward.getImageName());
-				if (reached(ward, imageData)) {
-					try {
-						if (doNotify(ward.getEmail(), ward.getJobId(),
-								imageData)) {
-							notified.add(ward);
+				if(imageData == null) {
+					LOGGER.debug("Image " +  ward.getImageName() + " does not exist in main database anymore");
+					removeNonExistentWard(ward);
+				} else {
+					if (reached(ward, imageData)) {
+						try {
+							if (doNotify(ward.getEmail(), ward.getJobId(),
+									imageData)) {
+								notified.add(ward);
+							}
+						} catch (Throwable e) {
+							LOGGER.error("Could not notify the user on: "
+									+ ward.getEmail() + " about " + ward, e);
 						}
-					} catch (Throwable e) {
-						LOGGER.error(
-								"Could not notify the user on: "
-										+ ward.getEmail() + " about " + ward, e);
 					}
 				}
 			}
@@ -94,6 +104,17 @@ public class WardenImpl implements Warden {
 		}
 
 		return false;
+	}
+	
+	private void removeNonExistentWard(Ward ward) {
+		try {
+			dbUtilsImpl.removeUserNotify(ward.getJobId(), ward.getImageName(),
+					ward.getEmail());
+		} catch (SQLException e) {
+			LOGGER.error("Error while accessing database", e);
+		} catch (NullPointerException e) {
+			LOGGER.error("Ward is null", e);
+		}
 	}
 
 	protected void removeNotified(Collection<Ward> notified) {
@@ -136,8 +157,7 @@ public class WardenImpl implements Warden {
 
 	protected boolean reached(Ward ward, ImageData imageData) {
 
-		// TODO: see if this works
-		return (imageData.getState().ordinal() >= ward.getTargetState()
+		return (imageData.getState().ordinal() == ward.getTargetState()
 				.ordinal());
 	}
 }

@@ -5,9 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -15,19 +13,22 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
-import org.fogbowcloud.blowout.scheduler.core.ExecutionMonitor;
-import org.fogbowcloud.blowout.scheduler.core.ManagerTimer;
-import org.fogbowcloud.blowout.scheduler.core.Scheduler;
-import org.fogbowcloud.blowout.scheduler.core.model.Job;
-import org.fogbowcloud.blowout.scheduler.core.model.Resource;
-import org.fogbowcloud.blowout.scheduler.core.model.Specification;
-import org.fogbowcloud.blowout.scheduler.core.model.TaskImpl;
-import org.fogbowcloud.blowout.scheduler.core.util.AppPropertiesConstants;
-import org.fogbowcloud.blowout.scheduler.core.util.Constants;
-import org.fogbowcloud.blowout.scheduler.infrastructure.InfrastructureManager;
-import org.fogbowcloud.blowout.scheduler.infrastructure.InfrastructureProvider;
+import org.fogbowcloud.blowout.core.BlowoutController;
+import org.fogbowcloud.blowout.core.SchedulerInterface;
+import org.fogbowcloud.blowout.core.StandardScheduler;
+import org.fogbowcloud.blowout.core.model.Job;
+import org.fogbowcloud.blowout.core.model.Specification;
+import org.fogbowcloud.blowout.core.model.Task;
+import org.fogbowcloud.blowout.core.model.TaskImpl;
+import org.fogbowcloud.blowout.core.util.Constants;
+import org.fogbowcloud.blowout.core.util.ManagerTimer;
+import org.fogbowcloud.blowout.infrastructure.manager.DefaultInfrastructureManager;
+import org.fogbowcloud.blowout.infrastructure.manager.InfrastructureManager;
+import org.fogbowcloud.blowout.infrastructure.monitor.ResourceMonitor;
+import org.fogbowcloud.blowout.infrastructure.provider.fogbow.FogbowInfrastructureProvider;
+import org.fogbowcloud.blowout.pool.BlowoutPool;
+import org.fogbowcloud.blowout.pool.DefaultBlowoutPool;
 import org.fogbowcloud.sebal.engine.scheduler.core.model.SebalJob;
-import org.fogbowcloud.sebal.engine.scheduler.restlet.SebalScheduleApplication;
 import org.fogbowcloud.sebal.engine.sebal.ImageData;
 import org.fogbowcloud.sebal.engine.sebal.ImageDataStore;
 import org.fogbowcloud.sebal.engine.sebal.ImageState;
@@ -36,23 +37,23 @@ import org.fogbowcloud.sebal.engine.sebal.SebalTasks;
 
 public class SebalMain {
 
-	private static ManagerTimer executionMonitorTimer = new ManagerTimer(
-			Executors.newScheduledThreadPool(1));
-	private static ManagerTimer schedulerTimer = new ManagerTimer(
-			Executors.newScheduledThreadPool(1));
 	private static ManagerTimer sebalExecutionTimer = new ManagerTimer(
 			Executors.newScheduledThreadPool(1));
+//	private static ManagerTimer taskMapUpdateTimer = new ManagerTimer(
+//			Executors.newScheduledThreadPool(1));
 
-	// private static Map<String, ImageData> pendingImageExecution = new
-	// ConcurrentHashMap<String, ImageData>();
-	private static ImageDataStore imageStore;
 	private static String nfsServerIP;
 	private static String nfsServerPort;
+	private static ImageDataStore imageStore;
 	private static InfrastructureManager infraManager;
-	// FIXME: change this later
-	private static int maxAllowedResources = 5;
+	
+//	private static Map<String, Integer> maxAllowedTasksPerFederationMap;
+//	private static Map<String, Collection<String>> submissionControlMap;
 
 	private static final Logger LOGGER = Logger.getLogger(SebalMain.class);
+	
+//	private static final String FEDERATION_TASK_LIMIT_FILE = "federation_task_limit_file";
+//	private static final int DEFAULT_TASK_LIMIT_PER_FEDERATION = 5;
 
 	public static void main(String[] args) throws Exception {
 		final Properties properties = new Properties();
@@ -61,8 +62,6 @@ public class SebalMain {
 
 		String imageStoreIP = args[1];
 		String imageStorePort = args[2];
-		nfsServerIP = args[3];
-		nfsServerPort = args[4];
 
 		LOGGER.debug("Imagestore " + imageStoreIP + ":" + imageStorePort);
 
@@ -70,57 +69,102 @@ public class SebalMain {
 
 		final Job job = new SebalJob(imageStore);
 
-		boolean blockWhileInitializing = new Boolean(
-				properties
-						.getProperty(AppPropertiesConstants.INFRA_SPECS_BLOCK_CREATING))
-				.booleanValue();
-
-		boolean isElastic = new Boolean(
-				properties.getProperty(AppPropertiesConstants.INFRA_IS_STATIC))
-				.booleanValue();
-		List<Specification> initialSpecs = getInitialSpecs(properties);
-
-		InfrastructureProvider infraProvider = createInfraProviderInstance(properties);
+		FogbowInfrastructureProvider infraProvider = new FogbowInfrastructureProvider(properties, true);
 
 		LOGGER.info("Calling infrastructure manager");
-		infraManager = new InfrastructureManager(initialSpecs, isElastic,
-				infraProvider, properties);
-		infraManager.start(blockWhileInitializing, true);
-
-		Scheduler scheduler = new Scheduler(infraManager, job);
-		ExecutionMonitor execMonitor = new SebalExecutionMonitor(scheduler, null, imageStore);
-
+		
+		final BlowoutPool pool = new DefaultBlowoutPool();
+		
+		SebalTaskMonitor execMonitor = new SebalTaskMonitor(pool, imageStore, Integer.parseInt(properties
+						.getProperty(SebalPropertiesConstants.EXECUTION_MONITOR_PERIOD)));
+		
+		ResourceMonitor resourceMonitor = new ResourceMonitor(infraProvider, pool, properties);
+		resourceMonitor.start();
+		execMonitor.start();
+		
+		infraManager = new DefaultInfrastructureManager(infraProvider, resourceMonitor);
+		SchedulerInterface scheduler = new StandardScheduler(execMonitor);
+		
+		pool.start(infraManager, scheduler);
+		
 		final Specification sebalSpec = getSebalSpecFromFile(properties);
+		
+//		maxAllowedTasksPerFederationMap = getMaxAllowedTasksPerFederation(properties);
+//		submissionControlMap = new HashMap<String, Collection<String>>();
 		
 		// In case of the process has been stopped before finishing the images running 
 		// in the next restart all images in running state will be reseted to queued state
 		resetImagesRunningToQueued();
 
-		addRTasks(properties, job, sebalSpec, ImageState.QUEUED, ImageDataStore.UNLIMITED);
-
-		executionMonitorTimer.scheduleAtFixedRate(execMonitor, 0,
-				Integer.parseInt(properties.getProperty("execution_monitor_period")));
-
-		schedulerTimer.scheduleAtFixedRate(scheduler, 0,
-				Integer.parseInt(properties.getProperty("scheduler_period")));
+		addRTasks(properties, job, sebalSpec, ImageState.QUEUED, ImageDataStore.UNLIMITED, pool);
+		
 		sebalExecutionTimer.scheduleAtFixedRate(new Runnable() {
 			@Override
 			public void run() {
 				try {
-					addRTasks(properties, job, sebalSpec, ImageState.DOWNLOADED, 1);
+					addRTasks(properties, job, sebalSpec, ImageState.DOWNLOADED, 1, pool);
 				} catch (InterruptedException e) {
 					LOGGER.error("Error while adding R tasks", e);
 				}
 			}
-		}, 0, Integer.parseInt(properties.getProperty("sebal_execution_period")));
 
-		// TODO: see how this will be modified
-		SebalScheduleApplication restletServer = new SebalScheduleApplication(scheduler, (SebalJob)job, imageStore, properties);
-		restletServer.startServer();
+		}, 0, Integer.parseInt(properties.getProperty(SebalPropertiesConstants.SEBAL_EXECUTION_PERIOD)));
 
 		LOGGER.info("Scheduler working");
+//		taskMapUpdateTimer.scheduleAtFixedRate(new Runnable() {
+//			@Override
+//			public void run() {
+//				updateSubmissionControlMap(scheduler);
+//			}
+//		}, 0, Integer.parseInt(properties.getProperty("task_map_update_period")));
 	}
 
+//	private static Map<String, Integer> getMaxAllowedTasksPerFederation(Properties properties) {
+//
+//		Map<String, Integer> maxAllowedTasksPerFederationMap = new HashMap<String, Integer>();
+//		File federationTaskLimitFile = new File(properties.getProperty(FEDERATION_TASK_LIMIT_FILE));
+//
+//		List<String> taskLimitLines = new ArrayList<String>();
+//
+//		try {
+//			taskLimitLines = FileUtils.readLines(federationTaskLimitFile,
+//					Charsets.UTF_8);
+//			
+//			for (String line : taskLimitLines) {
+//				String[] lineSplit = line.split("\\s+");
+//				maxAllowedTasksPerFederationMap.put(lineSplit[0],
+//						Integer.valueOf(lineSplit[1]));
+//				LOGGER.debug("Mapping federation " + lineSplit[0]
+//						+ " with task limit " + Integer.valueOf(lineSplit[1]));
+//			}
+//		} catch (IOException e) {
+//			LOGGER.error("Error while reading task limit file "
+//					+ federationTaskLimitFile, e);
+//		}
+//
+//
+//		return maxAllowedTasksPerFederationMap;
+//	}
+
+//	private static void updateSubmissionControlMap(Scheduler scheduler) {
+//		LOGGER.info("Updating task submission control map");		
+//		List<TaskProcess> allTaskProcesses = scheduler.getAllProcs();
+//		
+//		// TODO: see if this toString works
+//		LOGGER.debug("Current task processes active " + allTaskProcesses.toString());
+//		for(TaskProcess taskProcess : allTaskProcesses) {
+//			String federationMemberId = taskProcess.getSpecification()
+//					.getRequirementValue("Glue2CloudComputeManagerID");
+//			Collection<String> federationTasks = submissionControlMap.get(federationMemberId);
+//			
+//			if (taskProcess.getStatus().equals(TaskProcessImpl.State.FINNISHED)) {
+//				federationTasks.remove(taskProcess.getTaskId());
+//			}
+//			
+//			submissionControlMap.put(federationMemberId, federationTasks);
+//		}
+//	}
+	
 	private static void resetImagesRunningToQueued() throws SQLException {
 		List<ImageData> imagesRunning = imageStore.getIn(ImageState.RUNNING);
 		for (ImageData imageData : imagesRunning) {
@@ -143,49 +187,14 @@ public class SebalMain {
 		tempSpec.addRequirement("RequestType", requestType);
 	}
 
-	private static Map<String, Collection<Resource>> allocationMap() {
-		List<Resource> allResources = infraManager.getAllResources();
-
-		Map<String, Collection<Resource>> allocMap = new HashMap<String, Collection<Resource>>();
-		for (Resource resource : allResources) {
-			String location = resource
-					.getMetadataValue(Resource.METADATA_LOCATION);
-			LOGGER.debug("Resource location " + location);
-			if (!allocMap.containsKey(location)) {
-				LOGGER.debug("Adding " + location + " to location map");
-				allocMap.put(location, new LinkedList<Resource>());
-			}
-			LOGGER.debug("Associating resource " + resource.getId()
-					+ " to location " + location);
-			allocMap.get(location).add(resource);
-		}
-		return allocMap;
-	}
-
-	private static boolean isQuotaAvailable(String federationMemberId,
-			Map<String, Collection<Resource>> allocationMap,
-			int maxAllowedResources) {
-		LOGGER.debug("maxAllowedResources per location is "
-				+ maxAllowedResources);
-		if (allocationMap.containsKey(federationMemberId)) {
-			int numAllocationPerFederationMember = allocationMap.get(
-					federationMemberId).size();
-			LOGGER.debug(numAllocationPerFederationMember
-					+ " allocated resources to " + federationMemberId);
-			return numAllocationPerFederationMember < maxAllowedResources;
-		}
-		
-		return true;
-	}
-
 	private static void addRTasks(final Properties properties, final Job job,
-			final Specification sebalSpec, ImageState imageState, int limit)
+			final Specification sebalSpec, ImageState imageState, int limit, BlowoutPool pool)
 			throws InterruptedException {
 
 		try {
 			List<ImageData> imagesToExecute = imageStore.getIn(imageState,
 					limit);
-
+			List<Task> taskList = new ArrayList<Task>();
 			for (ImageData imageData : imagesToExecute) {
 				LOGGER.debug("The image " + imageData.getName()
 						+ " is in the execution state "
@@ -202,20 +211,34 @@ public class SebalMain {
 						sebalSpec.getUserDataType());
 				tempSpec.putAllRequirements(sebalSpec.getAllRequirements());
 				setFederationMemberIntoSpec(sebalSpec, tempSpec,
-						imageData.getFederationMember());
-
+						imageData.getFederationMember());				
+				
 				LOGGER.debug("tempSpec " + tempSpec.toString());
 
-				Map<String, Collection<Resource>> allocationMap = allocationMap();
-				LOGGER.info("Checking resource quota");
-				if (isQuotaAvailable(imageData.getFederationMember(),
-						allocationMap, maxAllowedResources)) {
+//				if (federationHasQuota(imageData.getFederationMember())) {
+				// Temporary
+				if(true) {
 
 					if (ImageState.QUEUED.equals(imageState)
 							|| ImageState.DOWNLOADED.equals(imageState)) {
 
 						TaskImpl taskImpl = new TaskImpl(UUID.randomUUID()
 								.toString(), tempSpec);
+						
+//						addTaskIntoSubmissionControlMap(taskImpl,
+//								imageData.getFederationMember());
+						
+						Map<String, String> nfsConfig = imageStore
+								.getFederationNFSConfig(imageData
+										.getFederationMember());
+						
+						Iterator it = nfsConfig.entrySet().iterator();
+						while (it.hasNext()) {
+					        Map.Entry pair = (Map.Entry)it.next();
+					        nfsServerIP = pair.getKey().toString();
+					        nfsServerPort = pair.getValue().toString();
+					        it.remove(); // avoids a ConcurrentModificationException
+					    }
 
 						LOGGER.debug("Creating R task " + taskImpl.getId());
 
@@ -227,7 +250,7 @@ public class SebalMain {
 						imageData.setState(ImageState.QUEUED);
 
 						imageData.setBlowoutVersion(getBlowoutVersion(properties));
-						job.addTask(taskImpl);
+						taskList.add(taskImpl);
 
 						imageStore.updateImage(imageData);
 						imageData.setUpdateTime(imageStore.getImage(
@@ -249,14 +272,52 @@ public class SebalMain {
 							+ imageData.getFederationMember() + ">");
 				}
 			}
+			pool.addTasks(taskList);
 		} catch (SQLException e) {
 			LOGGER.error("Error while getting image.", e);
 		}
 	}
+	
+//	private static void addTaskIntoSubmissionControlMap(TaskImpl taskImpl,
+//			String federationMember) {
+//		LOGGER.debug("Adding task " + taskImpl.getId() + " for "
+//				+ federationMember + " into submission control map");
+//		Collection<String> federationTaskCollection = submissionControlMap
+//				.get(federationMember);
+//
+//		if (federationTaskCollection == null) {
+//			federationTaskCollection = new ArrayList<String>();
+//		}
+//
+//		federationTaskCollection.add(taskImpl.getId());
+//		submissionControlMap.put(federationMember, federationTaskCollection);
+//		
+//		LOGGER.debug("Task " + taskImpl.getId()
+//				+ " added to submission control map");
+//	}
+
+//	private static boolean federationHasQuota(String federationMember) {
+//		if (submissionControlMap.containsKey(federationMember)) {
+//			int maxAllowedTasks = DEFAULT_TASK_LIMIT_PER_FEDERATION;
+//			if (maxAllowedTasksPerFederationMap.containsKey(federationMember)) {
+//				maxAllowedTasks = maxAllowedTasksPerFederationMap
+//						.get(federationMember);
+//			}
+//
+//			LOGGER.debug("Using task limit " + maxAllowedTasks + " for "
+//					+ federationMember);
+//			if (submissionControlMap.get(federationMember).size() >= maxAllowedTasks) {
+//				return false;
+//			}
+//		}
+//
+//		return true;
+//	}
 
 	private static String getBlowoutVersion(Properties properties) {
 
-		String blowoutDirPath = System.getProperty("user.dir");
+		//String blowoutDirPath = System.getProperty("user.dir");
+		String blowoutDirPath = properties.getProperty(SebalPropertiesConstants.BLOWOUT_DIR_PATH);
 		File blowoutDir = new File(blowoutDirPath);
 
 		if (blowoutDir.exists() && blowoutDir.isDirectory()) {
@@ -274,7 +335,7 @@ public class SebalMain {
 
 	private static Specification getSebalSpecFromFile(Properties properties) {
 		String sebalSpecFile = properties
-				.getProperty("infra_initial_specs_file_path");
+				.getProperty(SebalPropertiesConstants.INFRA_INITIAL_SPECS_FILE_PATH);
 		List<Specification> specs = new ArrayList<Specification>();
 		try {
 			specs = Specification.getSpecificationsFromJSonFile(sebalSpecFile);
@@ -287,30 +348,5 @@ public class SebalMain {
 					e);
 			return null;
 		}
-	}
-
-	private static List<Specification> getInitialSpecs(Properties properties)
-			throws IOException {
-		String initialSpecsFilePath = properties
-				.getProperty(AppPropertiesConstants.INFRA_INITIAL_SPECS_FILE_PATH);
-		LOGGER.debug("Getting initial spec from " + initialSpecsFilePath);
-
-		return Specification
-				.getSpecificationsFromJSonFile(initialSpecsFilePath);
-	}
-
-	private static InfrastructureProvider createInfraProviderInstance(
-			Properties properties) throws Exception {
-		String providerClassName = properties
-				.getProperty(AppPropertiesConstants.INFRA_PROVIDER_CLASS_NAME);
-
-		Object clazz = Class.forName(providerClassName)
-				.getConstructor(Properties.class).newInstance(properties);
-		if (!(clazz instanceof InfrastructureProvider)) {
-			throw new Exception(
-					"Provider Class Name is not a InfrastructureProvider implementation");
-		}
-
-		return (InfrastructureProvider) clazz;
 	}
 }

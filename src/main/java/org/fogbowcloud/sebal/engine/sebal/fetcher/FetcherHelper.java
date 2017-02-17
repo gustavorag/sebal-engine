@@ -9,6 +9,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.log4j.Logger;
+import org.fogbowcloud.sebal.engine.scheduler.SebalPropertiesConstants;
 import org.fogbowcloud.sebal.engine.sebal.CheckSumMD5ForFile;
 import org.fogbowcloud.sebal.engine.sebal.ImageData;
 import org.fogbowcloud.sebal.engine.sebal.ImageDataStore;
@@ -17,7 +18,8 @@ import org.mapdb.DB;
 
 public class FetcherHelper {
 
-	protected static final int NUMBER_OF_RESULT_FILES = 9;
+	protected static final int NUMBER_OF_INPUT_FILES = 11;
+	protected static final int NUMBER_OF_RESULT_FILES = 7;
 
 	public static final Logger LOGGER = Logger.getLogger(FetcherHelper.class);
 	
@@ -32,15 +34,20 @@ public class FetcherHelper {
 	
 	protected void removeImageFromPendingMap(ImageData imageData,
 			DB pendingImageFetchDB,
-			ConcurrentMap<String, ImageData> pendingImageFetchMap) {
+			ConcurrentMap<String, ImageData> pendingImageFetchMap) {		
 		LOGGER.info("Removing image " + imageData + " from pending map.");
 		pendingImageFetchMap.remove(imageData.getName());
 		pendingImageFetchDB.commit();
+		
+		if(pendingImageFetchMap.containsKey(imageData.getName())) {
+			LOGGER.debug("There is still register for image " + imageData
+					+ " into Map DB");
+		}
 	}
 
 	protected String getStationId(ImageData imageData, Properties properties)
 			throws IOException {
-		String stationFilePath = properties.getProperty(Fetcher.FETCHER_RESULTS_PATH)
+		String stationFilePath = properties.getProperty(SebalPropertiesConstants.LOCAL_INPUT_OUTPUT_PATH)
 				+ "/results/" + imageData.getName() + "/" + imageData.getName()
 				+ "_station.csv";
 		File stationFile = new File(stationFilePath);
@@ -60,19 +67,35 @@ public class FetcherHelper {
 			return null;
 		}
 	}
+	
+	protected String getRemoteImageInputsPath(final ImageData imageData,
+			Properties properties) {
+		return properties.getProperty(SebalPropertiesConstants.LOCAL_INPUT_OUTPUT_PATH)
+				+ File.separator + "images" + File.separator
+				+ imageData.getName();
+	}
+	
+	protected String getLocalImageInputsPath(ImageData imageData,
+			Properties properties) {
+		String localImageInputsPath = properties
+				.getProperty(SebalPropertiesConstants.LOCAL_INPUT_OUTPUT_PATH)
+				+ File.separator
+				+ "images" + File.separator + imageData.getName();
+		return localImageInputsPath;
+	}
 
 	protected String getRemoteImageResultsPath(final ImageData imageData,
 			Properties properties) {
-		return properties.getProperty(Fetcher.SEBAL_EXPORT_PATH) + "/results/"
+		return properties.getProperty(SebalPropertiesConstants.LOCAL_INPUT_OUTPUT_PATH) + "/results/"
 				+ imageData.getName();
 	}
 
 	protected String getLocalImageResultsPath(ImageData imageData,
 			Properties properties) {
 		String localImageResultsPath = properties
-				.getProperty(Fetcher.FETCHER_RESULTS_PATH)
-				+ "/results/"
-				+ imageData.getName();
+				.getProperty(SebalPropertiesConstants.LOCAL_INPUT_OUTPUT_PATH)
+				+ File.separator
+				+ "results" + File.separator + imageData.getName();
 		return localImageResultsPath;
 	}
 
@@ -95,11 +118,25 @@ public class FetcherHelper {
 		}
 		return false;
 	}
+	
+	protected boolean isThereFetchedInputFiles(String localImageInputsPath) {
+		File localImageInputsDir = new File(localImageInputsPath);
 
-	protected boolean isThereFetchedFiles(String localImageResultsPath) {
+		if (localImageInputsDir.exists() && localImageInputsDir.isDirectory()) {
+			if (localImageInputsDir.list().length >= NUMBER_OF_INPUT_FILES) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		return false;
+	}
+
+	protected boolean isThereFetchedResultFiles(String localImageResultsPath) {
 		File localImageResultsDir = new File(localImageResultsPath);
 
-		if (localImageResultsDir.exists() && localImageResultsDir.isDirectory()) {		
+		if (localImageResultsDir.exists() && localImageResultsDir.isDirectory()) {
 			if (localImageResultsDir.list().length >= NUMBER_OF_RESULT_FILES) {
 				return true;
 			} else {
@@ -113,7 +150,7 @@ public class FetcherHelper {
 	protected boolean resultsChecksumOK(ImageData imageData,
 			File localImageResultsDir) throws Exception {
 		LOGGER.info("Checksum of " + imageData + " result files");
-		if(isThereFetchedFiles(localImageResultsDir.getAbsolutePath())) {
+		if(isThereFetchedResultFiles(localImageResultsDir.getAbsolutePath())) {
 			if (CheckSumMD5ForFile.isFileCorrupted(localImageResultsDir)) {
 				return false;
 			}
@@ -122,5 +159,28 @@ public class FetcherHelper {
 		}
 		
 		return true;
+	}
+	
+	protected void createTimeoutAndMaxTriesFiles(File localImageResultsDir) {
+		LOGGER.debug("Generating timeout and max tries files");
+		ProcessBuilder builder;
+		Process p;
+		
+		for(File file : localImageResultsDir.listFiles()) {
+			if(file.getName().startsWith("temp-worker-run-") && file.getName().endsWith(".out")) {
+				
+				try {
+					builder = new ProcessBuilder("/bin/bash", "scripts/create_timeout_file.sh", file.getAbsolutePath());
+					p = builder.start();
+					p.waitFor();
+					
+					builder = new ProcessBuilder("/bin/bash", "scripts/create_max_tries_file.sh", file.getAbsolutePath());
+					p = builder.start();
+					p.waitFor();
+				} catch (Exception e) {
+					LOGGER.debug("Error while generating timeout and max tries files", e);
+				}				
+			}
+		}	
 	}
 }

@@ -3,6 +3,7 @@ package org.fogbowcloud.sebal.engine.sebal;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Map;
 
 import org.fogbowcloud.sebal.engine.sebal.model.SebalUser;
 import org.fogbowcloud.sebal.notifier.Ward;
@@ -26,10 +27,14 @@ public interface ImageDataStore {
     
 	void addUser(String userEmail, String userName, String userPass,
 			boolean userState, boolean userNotify, boolean adminRole) throws SQLException;
-	
+		
 	void addUserNotify(String jobId, String imageName, String userEmail) throws SQLException;	
 	
+	void addDeployConfig(String nfsIP, String nfsPort, String federationMember) throws SQLException;
+	
 	List<Ward> getUsersToNotify() throws SQLException;
+	
+	Map<String, String> getFederationNFSConfig(String federationMember) throws SQLException;
 	
 	void updateUserState(String userEmail, boolean state) throws SQLException;
 
@@ -39,9 +44,11 @@ public interface ImageDataStore {
 
     void updateImageMetadata(String imageName, String stationId, String sebalVersion) throws SQLException;
     
-    void removeUserNotify(String jobId, String imageName, String userEmail) throws SQLException;
+    void updateImageForPhase2(String imageName, String sebalVersion, String sebalTag) throws SQLException;
     
     boolean isUserNotifiable(String userEmail) throws SQLException;
+    
+    boolean deployConfigExists(String federationMember) throws SQLException;
 
     List<ImageData> getAllImages() throws SQLException;
 
@@ -51,11 +58,13 @@ public interface ImageDataStore {
 
     List<ImageData> getPurgedImages() throws SQLException;
 
-    List<ImageData> getImagesToDownload(String federationMember, int limit) throws SQLException;
+    List<ImageData> getImagesToDownload(String federationMember, int limit) throws SQLException;        
 
     ImageData getImage(String imageName) throws SQLException;
     
     SebalUser getUser(String userEmail) throws SQLException;
+    
+    String getNFSServerIP(String federationMember) throws SQLException;
 
     void dispose();
 
@@ -63,7 +72,11 @@ public interface ImageDataStore {
 
     boolean unlockImage(String imageName) throws SQLException;
 
+    void removeUserNotify(String jobId, String imageName, String userEmail) throws SQLException;
+
     void removeStateStamp(String imageName, ImageState state, Timestamp timestamp) throws SQLException;
+    
+    void removeDeployConfig(String federationMember) throws SQLException;
 
     List<ImageData> getImagesByFilter(ImageState state, String name, long processDateInit, long processDateEnd)
             throws SQLException;

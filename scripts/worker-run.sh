@@ -3,23 +3,8 @@
 # Global variables
 IMAGES_DIR_NAME=images
 RESULTS_DIR_NAME=results
-BIN_INIT_SCRIPT="bin/run.sh"
+BIN_RUN_SCRIPT="bin/run.sh"
 PROCESS_OUTPUT=
-
-# This function untare image and creates an output dir into mounted dir
-function untarImageAndPrepareDirs {
-  cd ${SEBAL_MOUNT_POINT}/$IMAGES_DIR_NAME
-
-  echo "Image file name is "${IMAGE_NAME}
-
-  # untar image
-  echo "Untaring image ${IMAGE_NAME}"
-  cd ${SEBAL_MOUNT_POINT}/$IMAGES_DIR_NAME/${IMAGE_NAME}
-  sudo tar -xvzf ${IMAGE_NAME}".tar.gz"
-
-  echo "Creating image output directory"
-  sudo mkdir -p ${SEBAL_MOUNT_POINT}/$RESULTS_DIR_NAME/${IMAGE_NAME}
-}
 
 function executeRunScript {
   #when https://github.com/xpto/foo-baa.git we have foo-baa which is the root dir of the repo
@@ -39,6 +24,18 @@ function checkSum {
   done
 }
 
+function moveTempFiles {
+  echo "Moving temporary out and err files"
+  sudo mv ${SANDBOX}/*out ${SEBAL_MOUNT_POINT}/$RESULTS_DIR_NAME/${IMAGE_NAME}
+  sudo mv ${SANDBOX}/*err ${SEBAL_MOUNT_POINT}/$RESULTS_DIR_NAME/${IMAGE_NAME}
+  PROCESS_OUTPUT=$?
+
+  if [ $PROCESS_OUTPUT -ne 0 ]
+  then
+    echo "Fail while transfering out and err files to ${SEBAL_MOUNT_POINT}/$RESULTS_DIR_NAME/${IMAGE_NAME}"
+  fi
+}
+
 function checkProcessOutput {
   PROCESS_OUTPUT=$?
 
@@ -56,10 +53,10 @@ function finally {
   exit $PROCESS_OUTPUT
 }
 
-untarImageAndPrepareDirs
-checkProcessOutput
 executeRunScript
 checkProcessOutput
 checkSum
+checkProcessOutput
+moveTempFiles
 checkProcessOutput
 finally
