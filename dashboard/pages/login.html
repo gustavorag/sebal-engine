@@ -1,21 +1,30 @@
 <!-- Begin: Content -->
-<div class="row" ng-controller="loginController"
+<div class="row" ng-controller="LoginController"
   style="width: 60%; height: 60%; margin-left: 20%; padding-top: 15%;">
   <div align="center" class="col-md-6"><img src="/images/sebal-logo.png" style="max-width:60%; height: auto; display: block;"/></div>
   <div align="center" class="col-md-6" style="margin-top: 5%;">
     <form action="/" id="loginFormId">
-      <div style="margin-left: 10%; margin-right: 20%; margin-bottom: 20px;">
-          <input align="center" type="text" class="form-control" id="nameInput" 
+      <div style="margin-left: 10%; margin-bottom: 20px;">
+          <input type="text" class="sebal-input sb-md"  id="nameInput" 
            ng-model="username" required placeholder="NAME/EMAIL">
+            <span class="glyphicon glyphicon-user sebal-input-span" aria-hidden="true"/>
+          </input>
       </div>
-      <div style="margin-left: 10%; margin-right: 20%; ">
-          <input align="center" type="password" class="form-control" id="passwordInput" 
+      <div style="margin-left: 10%;">
+          <input type="password" class="sebal-input sb-md" id="passwordInput" 
            ng-model="password" required placeholder="PASSWORD">
+            <span class="glyphicon glyphicon-lock sebal-input-span" aria-hidden="true"/>
+          </input>
       </div>
-      <div style="margin-left: 10%; margin-right: 20%; color: red; font-size: 1.5em">{{errorMsg}}</div>
-      
-      <div style="margin-left: 10%; margin-right: 20%; margin-top: 50px;">
-        <a ng-click="doLogin()" class="btn btn-default btn-lg">SING IN</a>
+      <div style="margin-left: 10%; margin-top: 5px;">
+          <div ng-show="errorMsg !== undefined" class="sebal-label sb-error sb-md" id="alert-login">
+                <button type="button" class="close" ng-click="clearLoginMsg()" aria-hidden="true">×</button>
+                <i class="fa fa-info pr10"></i>
+                {{errorMsg}}
+          </div>
+      </div>
+      <div style="margin-left: 10%; margin-top: 50px;">
+          <div ng-click="doLogin()" class="sebal-button sb-main sb-md">SING IN</div>
       </div>
     </form>
   </div>

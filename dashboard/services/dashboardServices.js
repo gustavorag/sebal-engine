@@ -1,78 +1,161 @@
 var dashboardServices = angular.module('dashboardServices', ['ngResource']);
 
-dashboardServices.service('AuthenticationService', function($log, $resource, Session, appConfig) {
+dashboardServices.service('AuthenticationService', function($log, $http,
+  Session, appConfig) {
+
 	var resourceUrl = appConfig.urlSebalSchedulerService+appConfig.authenticationPath;
-	$log.debug("Creating resource to Sebal Authentication : "+resourceUrl+" --- Sessao: "+JSON.stringify(Session));
-  	
-  	var authService = {};
+	var authService = {};
 
-  	authService.auth = function (username, password, callbackSuccess, callbackError) {
+	authService.auth = function (username, password, callbackSuccess, callbackError) {
 
-  			//Implement clientside encriptography ??
+			//Implement clientside encriptography ??
+      //LOGIN_SUCCEED, LOGIN_FAILED, LOGOUT_SUCCEED
+			user = {'name': username, 'pass': password};
+      
+      
+  		$http.post(resourceUrl, user)
+             .success(function (response) {
+                console.log("Return: "+JSON.stringify(response));
+                var authToken = "TOKEN-SEBAL" // fix this hardcode to get token from HEADERS
+                Session.create(username, authToken);
+                callbackSuccess(response)
+             }).
+             error(function (error) {
+                 callbackError(error);
+          	 });
 
-  			user = {name: username, pass: password};
+      // $http({
+      //     method: 'GET',
+      //     url: resourceUrl,
+      //     data: {'message': 'Hello world'}
+      // })
+      // .success(function (response) {
+      //     var authToken = "TOKEN-SEBAL" // fix this hardcode to get token from HEADERS
+      //     Session.create(username, authToken);
+      //     callbackSuccess(response);
+      // })
+      // .error(function (error) {
+      //   callbackError(error);
+      // });
+  };
 
-    		$http.post(resourceUrl, { username: username, password: password })
-               .success(function (response) {
-                   callbackSuccess(response)
-                })
-               .error(function (response) {
-                   callbackError(response);
-            	});
+	authService.mockLogin = function (username, password, callbackSuccess, callbackError) {
 
-    };
+	if(!username || !password){
+		Session.destroy();
+		callbackError("Username and Password are required");
+	}else{
+		Session.create(username, password);
+		callbackSuccess("success");
+	}
 
-  	authService.mockLogin = function (username, password, callbackSuccess, callbackError) {
+  };
 
-		if(!username || !password){
-			Session.destroy();
-			callbackError("Username and Password are required");
-		}else{
-			Session.create(username, password);
-			callbackSuccess("success");
-		}
+  authService.doLogout = function(){
+  	 Session.destroy();
+  };
 
-    };
+  authService.getUserName = function(){
+ 		return Session.getUser().name;
+  };
 
-    authService.doLogout = function(){
-    	 Session.destroy();
-    };
+  authService.getToken = function(){
+    return Session.getUser().token;
+  };
 
-    authService.getUser = function(){
-   		return Session.getUser();
-    };
-
-    return authService;
+  return authService;
 	
 });
 
 dashboardServices.service('Session', function () {
-  this.create = function (userName, userPass) {
+  
+  this.user = {
+      name: undefined,
+      token: undefined
+  };
+
+  this.create = function (userName, userToken) {
   	console.log('Creating user ')
   	this.user = {
     	name: userName,
-    	pass: userPass
+    	token: userToken
     };
   };
   this.destroy = function () {
-    this.user = null;
+    this.user = {
+      name: undefined,
+      token: undefined
+    };
   };
   this.getUser = function(){
   	return this.user;
   };
 })
 
+dashboardServices.service('GlobalMsgService', function () {
 
-dashboardServices.service('RegionService', function($log, $resource, appConfig) {
+  var message;
+  this.cleanMsg = function() {
+    message = {content: undefined, level: undefined}
+  };
+
+  this.cleanMsg();
+
+  this.pushMessageAlert = function (msg) {
+    message.content = msg;
+    message.level = "alert-info";
+  };
+  this.pushMessageSuccess = function (msg) {
+    message.content = msg;
+    message.level = "alert-success";
+  };
+  this.pushMessageInfo = function (msg) {
+    message.content = msg;
+    message.level = "alert-info";
+  };
+  this.pushMessageWarning = function (msg) {
+    message.content = msg;
+    message.level = "alert-warning";
+  };
+  this.pushMessageFail = function (msg) {
+    message.content = msg;
+    message.level = "alert-danger";
+  };
+  this.getContent = function(){
+    return message.content;
+  } 
+  this.getLevel = function(){
+    return message.level;
+  }
+
+})
+
+dashboardServices.service('ImageService', function($log, $http, AuthenticationService, appConfig) {
+
+  var resourceUrl = appConfig.urlSebalSchedulerService+appConfig.imagePath;
+  var sessionToken = AuthenticationService.getToken();
+
+  var imageService = {};
+
+  imageService.getImages = function(successCallback, errorCalback){
+    $http.get(resourceUrl, {headers: { 'x-auth-token': sessionToken} })
+      .success(successCallback).error(errorCalback);
+      
+  };
+
+  return imageService;
+  
+});
+
+dashboardServices.service('RegionService', function($log, $resource, AuthenticationService, appConfig) {
 
 	var resourceUrl = appConfig.urlSebalSchedulerService+appConfig.regionPath;
-
-	return $resource(resourceUrl, null,
-           {
-	       		postRegion:{
-	       			method: 'POST',
-	               	headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-	       		}
-           	}
-	);
+  var sessionToken = AuthenticationService.getToken();
+	return $resource(resourceUrl, null,{
+            get: {
+              method: 'GET',
+              headers: {'auth-token': sessionToken}
+            }
+          }
+  );
 });

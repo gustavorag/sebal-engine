@@ -32,7 +32,7 @@
   <link rel="shortcut icon" href="assets/img/favicon.ico">
   <!-- Openlayers CSS -->
   <link rel="stylesheet" href="https://openlayers.org/en/v3.20.1/css/ol.css" type="text/css">
-
+  <link rel="stylesheet" type="text/css" href="css/sebal.css">
   <!-- Angular -->
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular.min.js"></script>
   <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular-route.js"></script>
@@ -46,9 +46,9 @@
 </head>
 
 <body class="ng-clock"  ng-app="schedulerDashboard" 
-  style="background-color:rgb(91, 91, 95); overflow: hidden;">
+  style="background-color:rgb(120, 130, 140); overflow: hidden;">
   <!-- Start: Main -->
-  <div style="height:100%">
+  <div style="height:100%" ng-controller="MainController">
     <span class='ng-clock'></span>
 
       <div ng-view style="height:100%"></div>
