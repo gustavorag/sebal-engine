@@ -1,0 +1,116 @@
+.sebal-content{
+	background-color: rgb(120, 130, 140);
+	height: 100%; 
+	width: 100%;
+}
+/* BUTTONS */
+.span-button:hover{
+	background-color: rgb(0,255,135);
+	color: rgb(70,75,78);
+}
+.sebal-button{
+	margin-left: 10px;
+	line-height: 70px;
+	height:70px;
+	width: 300px;
+	text-align: center;
+	vertical-align: middle;
+	font-family: monospace;
+	font-size: 1.5em;
+	font-weight: bold;
+	color: rgb(70,75,78);
+}
+.sebal-button:hover{
+	border: 2px solid rgb(70,80,90);
+	cursor: pointer;
+}
+.sebal-button.sb-main{
+	background-color: rgb(0,255,135);
+}
+.sebal-button.sb-cancel{
+	background-color: rgb(255,35,100); 
+}
+/* INPUTS */
+.sebal-input{
+	background-color: rgb(255,255,255); 
+	padding-left: 10px;
+	padding-right: 40px;
+	height:70px;
+	width: 300px;
+	font-size: 1.5em;
+	font-weight: bold;
+}
+.sebal-input-span{
+	font-size: 2em;
+	position: relative !important;
+    display: inline !important;
+    margin-left: -35px !important;
+}
+/* LABELS */
+.sebal-label{
+	margin-left: 10px;
+	text-align: center;
+	vertical-align: middle;
+	font-family: monospace;
+	font-size: 1.2em;
+	height:50px;
+	width: 300px;
+	font-weight: bold;
+	background-color: rgb(255,255,255);
+}
+div.sebal-label button{
+	text-align: center;
+	font-size: 2em;
+	color: rgb(150, 80, 80);
+}
+
+.sebal-label.sb-error{
+	font-weight: bold;
+	background-color: rgb(255,150,120);
+}
+
+/* SIZES */
+.sb-md{
+	width: 400px;
+}
+.sb-thin{
+	height:50px;
+}
+
+/* TABLE */
+.sebal-table-conteiner{
+	background-color: rgb(120, 130, 140);
+	padding: 10px 10px 10px 10px;
+}
+.sebal-table tr{
+	font-size: 1.5em;
+	color: rgb(230,230,230);
+	background-color:rgb(68,66,66);
+    border: 10px solid rgb(120, 130, 140);
+    text-align: center;
+}
+.sebal-table td{
+	padding: 15px;
+}
+.sebal-table th{
+	font-size: 1.7em;
+	text-align: center;
+	font-weight: bold;
+}
+.main-column{
+	color: rgb(200,200,200);
+	background-color:rgb(10,10,10);
+}
+
+/* MISC */
+.sb-close-md-btn{
+	margin: 10px 10px 10px 10px;
+	font-size: 30px;
+	color: rgb(200,130,100);
+}
+.sb-close-md-btn:hover{
+	margin: 5px 5px 5px 5px;
+	font-size: 40px;
+	color: rgb(250,130,100);
+	cursor: pointer;
+}
