@@ -120,15 +120,9 @@ public class SebalMain {
 
 	private static void setFederationMemberIntoSpec(Specification spec,
 			Specification tempSpec, String federationMember) {
-		String fogbowRequirements = spec
-				.getRequirementValue("FogbowRequirements");
 		LOGGER.debug("Setting federationmember " + federationMember
 				+ " into FogbowRequirements");
 		String requestType = spec.getRequirementValue("RequestType");
-		String newRequirements = fogbowRequirements
-				+ " && Glue2CloudComputeManagerID==\"" + federationMember
-				+ "\"";
-		tempSpec.addRequirement("FogbowRequirements", newRequirements);
 		tempSpec.addRequirement("RequestType", requestType);
 	}
 
