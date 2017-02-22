@@ -119,15 +119,7 @@ public class SebalMain {
 			imageStore.updateImage(imageData);
 		}
 	}
-
-	private static void setFederationMemberIntoSpec(Specification spec,
-			Specification tempSpec, String federationMember) {
-		LOGGER.debug("Setting federationmember " + federationMember
-				+ " into FogbowRequirements");
-		String requestType = spec.getRequirementValue("RequestType");
-		tempSpec.addRequirement("RequestType", requestType);
-	}
-
+	
 	private static void addRTasks(final Properties properties, final Job job,
 			final Specification sebalSpec, ImageState imageState, int limit)
 			throws InterruptedException {
@@ -144,23 +136,13 @@ public class SebalMain {
 				LOGGER.debug("Adding " + imageState + " task for image "
 						+ imageData.getName());
 
-				Specification tempSpec = new Specification(
-						sebalSpec.getImage(), sebalSpec.getUsername(),
-						sebalSpec.getPublicKey(),
-						sebalSpec.getPrivateKeyFilePath(),
-						sebalSpec.getUserDataFile(),
-						sebalSpec.getUserDataType());
-				tempSpec.putAllRequirements(sebalSpec.getAllRequirements());
-				setFederationMemberIntoSpec(sebalSpec, tempSpec,
-						imageData.getFederationMember());
-
-				LOGGER.debug("tempSpec " + tempSpec.toString());
+				LOGGER.debug("sebalSpec " + sebalSpec.toString());
 
 				if (ImageState.QUEUED.equals(imageState)
 						|| ImageState.DOWNLOADED.equals(imageState)) {
 
 					TaskImpl taskImpl = new TaskImpl(UUID.randomUUID()
-							.toString(), tempSpec);
+							.toString(), sebalSpec);
 
 					Map<String, String> nfsConfig = imageStore
 							.getFederationNFSConfig(imageData
@@ -177,7 +159,7 @@ public class SebalMain {
 					LOGGER.debug("Creating R task " + taskImpl.getId());
 
 					taskImpl = SebalTasks.createRTask(taskImpl, properties,
-							imageData.getName(), tempSpec,
+							imageData.getName(), sebalSpec,
 							imageData.getFederationMember(), nfsServerIP,
 							nfsServerPort, imageData.getSebalVersion(),
 							imageData.getSebalTag());
