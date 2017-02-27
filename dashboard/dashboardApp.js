@@ -6,7 +6,6 @@ var app = angular.module('schedulerDashboard', [
 ]);
 app.constant("appConfig", {
 	"urlSebalSchedulerService":"http://localhost:9192/sebal-scheduler/",
-	"authenticationPath":"auth/",
 	"imagePath":"images/",
 	"getImageByIdPath":"images/:imageId",
 	"regionResourcePath":"regions/",
@@ -20,7 +19,7 @@ app.config(function($logProvider){
 app.config(function($routeProvider){
 
 	var checkUser = function($location, AuthenticationService){
-		if(AuthenticationService.getToken() === undefined){
+		if(!AuthenticationService.getCheckUser()){
 			$location.path("/");
 		}
 	}

@@ -5,6 +5,7 @@ dashboardControllers.controller('MainController', function($scope, $log, $filter
   
   $scope.user = {name:"", token: ""};
   $scope.globalMsg = GlobalMsgService;
+  getUserName();
 
   $scope.doLogout = function(){
     console.log("Logout success");
@@ -16,10 +17,14 @@ dashboardControllers.controller('MainController', function($scope, $log, $filter
     GlobalMsgService.cleanMsg();
   }
  
+  function getUserName(){
+    $scope.user.name = AuthenticationService.getUserName();
+  }
+
   $scope.$on(appConfig.LOGIN_SUCCEED, function (event, value) {
     console.log(value);
     //GlobalMsgService.pushMessageSuccess(value);
-    $scope.user.name = AuthenticationService.getUserName();
+    getUserName();
   });
 });
 
@@ -32,7 +37,7 @@ dashboardControllers.controller('LoginController', function($scope, $rootScope, 
   
   $scope.doLogin = function(){
     $scope.errorMsg = undefined;
-    AuthenticationService.auth($scope.username, $scope.password,
+    AuthenticationService.basicSessionLogin($scope.username, $scope.password,
       function(response){ //Success call back
         $rootScope.$broadcast(appConfig.LOGIN_SUCCEED, "Login succeed");
         $location.path('/monitor');
@@ -54,18 +59,32 @@ dashboardControllers.controller('MonitorController', function($scope, $log, $fil
    ImageService, AuthenticationService, GlobalMsgService, appConfig) {
   
   $scope.sebalImages = [];
+  $scope.elementShowingDetail = undefined;
 
   $scope.getSebalImages = function(){
     ImageService.getImages(
           function(data){
-              $scope.sebalImages = data;
+              $scope.sebalImages = data;   
           },
           function(error){
               var msg = "An error occurred when tried to get Images";
               $log.error(msg+" : "+error);
               GlobalMsgService.pushMessageFail(msg)
           }
-      ); 
+    ); 
+  }
+  $scope.showDetail = function(elementId){
+    console.log(elementId);
+    if($scope.elementShowingDetail !== undefined){
+      $("#"+$scope.elementShowingDetail).addClass('hidden');
+    }
+    if($scope.elementShowingDetail === elementId){
+      $("#"+$scope.elementShowingDetail).addClass('hidden');
+      $scope.elementShowingDetail = undefined;
+    }else{
+      $("#"+elementId).removeClass('hidden');
+      $scope.elementShowingDetail = elementId;
+    }
   }
 
   $scope.getSebalImages();
@@ -73,23 +92,42 @@ dashboardControllers.controller('MonitorController', function($scope, $log, $fil
 });
 
 
-dashboardControllers.controller('RegionController', function($scope, $log, $filter, $timeout, 
-  AuthenticationService, RegionService, GlobalMsgService, appConfig) {
+dashboardControllers.controller('JobController', function($scope, $log, $filter, $timeout, 
+  AuthenticationService, JobService, GlobalMsgService, appConfig) {
 
-  //$scope.user = AuthenticationService.getUser();
+  $scope.cleanForm = function(){
+      $scope.firstYear = undefined;
+      $scope.lastYear = undefined;
+      $scope.region = undefined;
+      $scope.sebalVersion = undefined;
+      $scope.sebalTag = undefined;
+  }
 
-  $scope.submitRegion = function(){
-    //Validate data
-    RegionService.data = "firstYear="+$scope.firstYear
-      +"&lastYear="+$scope.secondYear
-      +"&region="+$scope.region
-      +"&sebalVersion"+$scope.sebalVersion;
-    console.log("Submiting "+JSON.stringify(RegionService.data));
-    $scope.firstYear=undefined;
-    $scope.secondYear=undefined;
-    $scope.region=undefined;
-    $scope.sebalVersion=undefined;
+  $scope.submitJob = function(){
+
+    var data = {
+      'firstYear': $scope.firstYear, 
+      'lastYear': $scope.lastYear, 
+      'region': $scope.region, 
+      'sebalVersion': $scope.sebalVersion, 
+      'sebalTag': $scope.sebalTag
+    }
+
+    console.log("Sending "+JSON.stringify(data));
+    
+    JobService.postJob(data,
+      function(response){
+        GlobalMsgService.pushMessageSuccess('Your job was submitted. Wait for the processing be completed. ' 
+              + 'If you activated the notifications you will get an email when finished.');
+        $scope.cleanForm();
+      }, 
+      function(error){
+        $log.error(JSON.stringify(error));
+        GlobalMsgService.pushMessageFail('Error while trying to submit a job.');
+        //$scope.cleanForm();
+      });
   };
+  
  
 });
 
@@ -119,8 +157,8 @@ dashboardControllers.controller('MapController', function($scope, $log, $filter,
 
 dashboardControllers.controller("PaginationController", function($scope, $log) {
 
-  $scope.itemsPerPage = 5;
-  $scope.itemsPerPageOptions = [10, 15, 20, 50];
+  $scope.itemsPerPage = 9999;
+  $scope.itemsPerPageOptions = [5, 8, 10, 20, 50];
   $scope.currentPage = 0;
   $scope.totalPage = 0;
   $scope.prevPageDisabled = true;
@@ -132,8 +170,10 @@ dashboardControllers.controller("PaginationController", function($scope, $log) {
       
       var rex = new RegExp($scope.filterValue, 'i');
 
-      $('.searchable tr').hide();
-      $('.searchable tr').filter(function () {
+      $('.div-table-row').hide();
+      $('.div-table-row').filter(function () {
+          $log.debug("Testing "+JSON.stringify($(this)));
+          $log.debug("Testing "+$(this).text());
           var filterResult = rex.test($(this).text());
           return filterResult;
       }).show();
@@ -143,25 +183,23 @@ dashboardControllers.controller("PaginationController", function($scope, $log) {
   
   $scope.pageCount = function(arrayElements) {
     if( Array.isArray(arrayElements)){
-      $scope.totalPage = Math.ceil(arrayElements.length/$scope.itemsPerPage)-1;
+      //$scope.totalPage = Math.ceil(arrayElements.length/$scope.itemsPerPage)-1;
+      $scope.totalPage = 0;
     }else{
       $scope.totalPage = 0;
     }
+    return $scope.totalPage;
   };
 
-  $scope.getPages = function(arrayElements) {
-    if( Array.isArray(arrayElements)){
-      var pages = [];
-      var range = $scope.pageCount(arrayElements)+1;
-      for (var i = 0; i < range; i++) {
-        pages.push(i+1);
-      };
-      prevPageCheck();
-      nextPageCheck()
-      return pages;
-    }else{
-      return [];
-    }
+  $scope.getPages = function() {
+    var pages = [];
+    var range = $scope.totalPage;
+    for (var i = 0; i < range; i++) {
+      pages.push(i+1);
+    };
+    prevPageCheck();
+    nextPageCheck();
+    return pages;
   };
 
   $scope.setPage = function(n) {
@@ -179,9 +217,9 @@ dashboardControllers.controller("PaginationController", function($scope, $log) {
     $('#filter').val('Search in table...');
   };
 
-  $scope.nextPage = function(arrayElements) {
+  $scope.nextPage = function() {
     if( Array.isArray(arrayElements)){
-      if ($scope.currentPage < $scope.pageCount(arrayElements)) {
+      if ($scope.currentPage < $scope.totalPage) {
         $scope.currentPage++;
       }
       nextPageCheck();
@@ -194,7 +232,7 @@ dashboardControllers.controller("PaginationController", function($scope, $log) {
   };
 
   function prevPageCheck(){
-    if($scope.currentPage === 0){
+    if($scope.currentPage == 0){
         $scope.prevPageDisabled = true;
     }else{
         $scope.prevPageDisabled = false;
@@ -202,7 +240,7 @@ dashboardControllers.controller("PaginationController", function($scope, $log) {
   }
 
   function nextPageCheck(){
-    if($scope.currentPage === $scope.totalPage){
+    if($scope.currentPage == $scope.totalPage){
         $scope.nextPageDisabled = true;
     }else{
         $scope.nextPageDisabled = false;

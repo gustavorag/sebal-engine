@@ -1,6 +1,13 @@
-.sebal-content{
+.sebal-content, .sebal-table, .sebal-table-conteiner{
 	background-color: rgb(120, 130, 140);
-	height: 100%; 
+}
+.sb-nav, .div-table, .div-table-row{
+	background-color:rgb(68, 66, 66);
+}
+
+.sebal-content{
+	overflow-y: auto !important;
+	height: 90%; 
 	width: 100%;
 }
 /* BUTTONS */
@@ -78,31 +85,50 @@ div.sebal-label button{
 }
 
 /* TABLE */
+
 .sebal-table-conteiner{
-	background-color: rgb(120, 130, 140);
 	padding: 10px 10px 10px 10px;
+}
+.sebal-table{
+	width:100%;
 }
 .sebal-table tr{
 	font-size: 1.5em;
 	color: rgb(230,230,230);
-	background-color:rgb(68,66,66);
-    border: 10px solid rgb(120, 130, 140);
+    /*border: 10px solid rgb(120, 130, 140);*/
     text-align: center;
 }
 .sebal-table td{
-	padding: 15px;
+	padding: 5px;
 }
 .sebal-table th{
+	padding: 5px;
 	font-size: 1.7em;
 	text-align: center;
 	font-weight: bold;
+}
+.div-table{
+	height: 50px;
+}
+div.div-table-row div{
+	padding: 10px;
+	height: 100%;
 }
 .main-column{
 	color: rgb(200,200,200);
 	background-color:rgb(10,10,10);
 }
+.sb-table-detail, .list-group-item{
+	text-align: left;
+	background-color:rgb(240,240,240);
+	color: rgb(30,30,30);
+	padding: 5px 5px 5px 5px;
+	height: 100%;
+	font-size: 0.9em;
+}
 
 /* MISC */
+
 .sb-close-md-btn{
 	margin: 10px 10px 10px 10px;
 	font-size: 30px;

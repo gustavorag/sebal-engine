@@ -4,7 +4,6 @@
 
 <div id="content" ng-controller="MonitorController" class="sebal-content">
   <!-- Begin: Content -->
-  <section class="table-layout animated fadeIn">
   <!-- begin: .tray-center -->
     <div class="tray tray-center pn">
       <div class="panel sebal-table-container" ng-controller="PaginationController">
@@ -43,28 +42,76 @@
             </div>
           </div>
         </div>
+        <div id="table-div">
         <!-- message listings table -->
-        <table id="image-table" class="table tc-checkbox-1 admin-form theme-warning br-t sebal-table">
+        <table id="image-table" class="sebal-table">
           <thead>
             <tr class="table-header">
-              <th class="text-center hidden-xs">#</th>
-              <th class="main-column">Name</th>
-              <th>Created</th>
-              <th>Updated</th>
-              <th>Status</th>
+              <th>
+                <div class="div-table row">
+                  <div class="col-md-1">#</div>
+                  <div class="col-md-3 main-column">Name</div>
+                  <div class="col-md-3">Created</div>
+                  <div class="col-md-3">Updated</div>
+                  <div class="col-md-2">State</div>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody class="searchable">
-              <tr ng-repeat="i in sebalImages | limitTo: itemsPerPage">
-              <td>{{$index + 1}}</td><td class="selectable main-column" ng-class="{'selected' : i.name == actualImage}">{{i.name}}</td><td>{{ i.creationTime}}</td><td class="hidden-xs">{{i.updateTime}}</td><td>{{i.status}}</td>
+            <tr ng-repeat="i in sebalImages | limitTo: itemsPerPage">
+              <td>
+                <div class="div-table-row row">
+                  <div class="col-md-1">{{$index + 1}}</div>
+                  <div class="col-md-3 selectable main-column" ng-click="showDetail('detail'+$index)">{{i.name}}</div>
+                  <div class="col-md-3">{{ i.creationTime}}</div>
+                  <div class="col-md-3">{{i.updateTime}}</div>
+                  <div class="col-md-2">{{i.state}}</div>
+                </div>
+                <div id="detail{{$index}}" class="div-table row sb-table-detail hidden">
+                  <div class="col-md-12">
+                    <dl class="dl-horizontal">
+                      <dt>Download Link</dt>
+                      <dd>{{ i.downloadLink}}</dd>
+                      <dt>State</dt>
+                      <dd>{{ i.state}}</dd>
+                      <dt>Federation Member</dt>
+                      <dd>{{ i.federationMember}}</dd>
+                      <dt>Priority</dt>
+                      <dd>{{ i.priority}}</dd>
+                      <dt>Station ID</dt>
+                      <dd>{{ i.stationId}}</dd>
+                      <dt>Sebal Version</dt>
+                      <dd>{{ i.sebalVersion}}</dd>
+                      <dt>Sebal Tag</dt>
+                      <dd>{{ i.sebalTag}}</dd>
+                      <dt>Crawler Version</dt>
+                      <dd>{{ i.crawlerVersion}}</dd>
+                      <dt>Fetcher Version</dt>
+                      <dd>{{ i.fetcherVersion}}</dd>
+                      <dt>Blowout Version</dt>
+                      <dd>{{ i.blowoutVersion}}</dd>
+                      <dt>Fmask Version</dt>
+                      <dd>{{ i.fmaskVersion}}</dd>
+                      <dt>Creation Time</dt>
+                      <dd>{{ i.creationTime}}</dd>
+                      <dt>Update Time</dt>
+                      <dd>{{ i.updateTime}}</dd>
+                      <dt>Status</dt>
+                      <dd>{{ i.status}}</dd>
+                      <dt>Error</dt>
+                      <dd>{{ i.error}}</dd>
+                    </dl>
+                  </div>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
-
+        </div>
       </div>
     </div>
   <!-- End: Content -->
-  </section>
 </div>	
 
 

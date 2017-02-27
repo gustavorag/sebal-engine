@@ -1,6 +1,6 @@
         <!-- HEADER AND NAVBAR OF SEBAL DASHBOARD-->
         <header>
-            <nav style="background-color:rgb(68, 66, 66);">
+            <nav class="sb-nav">
                 <div class="row"
                   style="padding-top: 15px; padding-bottom: 15px;">
                     <div class="col-md-3" style="padding-left: 10%;">
@@ -34,7 +34,7 @@
         </div>
        
         <!-- Modal -->
-        <div class="modal fade" id="myModal" tabindex="-1" ng-controller="RegionController"
+        <div class="modal fade" id="myModal" tabindex="-1" ng-controller="JobController"
           role="dialog" aria-labelledby="myModalLabel">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -50,7 +50,7 @@
                   </div>
                   <div style="margin-left: 10%; margin-right: 20%; margin-bottom: 20px;">
                       <input type="date" class="sebal-input sb-md sb-thin" id="secondYearField" 
-                        ng-model="secondYear" required placeholder="Last Year">
+                        ng-model="lastYear" required placeholder="Last Year">
                   </div>
                   <div style="margin-left: 10%; margin-right: 20%; margin-bottom: 20px;">
                       <input type="text" class="sebal-input sb-md sb-thin"  id="regionField" 
@@ -60,8 +60,12 @@
                       <input type="text" class="sebal-input sb-md sb-thin" id="versionField" 
                        ng-model="sebalVersion" required placeholder="Sebal Version">
                   </div>
+                  <div style="margin-left: 10%; margin-right: 20%; margin-bottom: 20px;">
+                      <input type="text" class="sebal-input sb-md sb-thin" id="tagField" 
+                       ng-model="sebalTag" required placeholder="Sebal Tag">
+                  </div>
                   <div style="margin-left: 8%; margin-right: 20%;">
-                    <div ng-click="submitRegion()" data-dismiss="modal" class="sebal-button sb-main sb-md">
+                    <div ng-click="submitJob()" data-dismiss="modal" class="sebal-button sb-main sb-md">
                       SUBMIT
                     </div>
                   </div>
